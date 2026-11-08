@@ -1,0 +1,43 @@
+name: Compilar Mod Host Only
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Baixar codigo fonte
+      uses: actions/checkout@v3
+
+    - name: Configurar .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Criar Projeto C#
+      run: dotnet new classlib --name MeuModHostOnly --framework net6.0 --force
+
+    - name: Adicionar BepInEx
+      run: |
+        cd MeuModHostOnly
+        dotnet add package BepInEx.Unity.IL2CPP --version 6.0.0-be.668
+        dotnet add package HarmonyX --version 2.10.2
+
+    - name: Substituir Codigo Fonte
+      run: |
+        cp Plugin.cs MeuModHostOnly/Class1.cs
+
+    - name: Compilar DLL
+      run: |
+        cd MeuModHostOnly
+        dotnet build -c Release
+
+    - name: Enviar Arquivo DLL
+      uses: actions/upload-artifact@v3
+      with:
+        name: ModHostOnly-DLL
+        path: MeuModHostOnly/bin/Release/net6.0/*.dll
