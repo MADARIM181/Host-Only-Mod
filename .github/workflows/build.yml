@@ -18,12 +18,19 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Criar projeto e injetar dependencias
+    - name: Criar projeto e adicionar referencias do Among Us
       run: |
         dotnet new classlib -o ModProj -f net6.0 --force
         cd ModProj
         
-        # Criar o arquivo de projeto com suporte a blocos não seguros (necessário para o Among Us)
+        # Criar pasta para bibliotecas de referencia do jogo
+        mkdir -p libs
+        
+        # Descarregar assemblies de referencia publicos do Among Us para compilacao
+        curl -L -o libs/Assembly-CSharp.dll https://github.com/Among-Us-Modding/AmongUs-ReverseEngineering/raw/master/Assemblies/Assembly-CSharp.dll || true
+        curl -L -o libs/UnityEngine.CoreModule.dll https://github.com/Among-Us-Modding/AmongUs-ReverseEngineering/raw/master/Assemblies/UnityEngine.CoreModule.dll || true
+        
+        # Criar o arquivo .csproj referenciando as libs e o BepInEx
         echo '<Project Sdk="Microsoft.NET.Sdk">' > ModProj.csproj
         echo '  <PropertyGroup>' >> ModProj.csproj
         echo '    <TargetFramework>net6.0</TargetFramework>' >> ModProj.csproj
@@ -33,13 +40,16 @@ jobs:
         echo '  <ItemGroup>' >> ModProj.csproj
         echo '    <PackageReference Include="HarmonyX" Version="2.10.2" />' >> ModProj.csproj
         echo '    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.668" />' >> ModProj.csproj
+        echo '    <Reference Include="Assembly-CSharp">' >> ModProj.csproj
+        echo '      <HintPath>libs/Assembly-CSharp.dll</HintPath>' >> ModProj.csproj
+        echo '    </Reference>' >> ModProj.csproj
+        echo '    <Reference Include="UnityEngine.CoreModule">' >> ModProj.csproj
+        echo '      <HintPath>libs/UnityEngine.CoreModule.dll</HintPath>' >> ModProj.csproj
+        echo '    </Reference>' >> ModProj.csproj
         echo '  </ItemGroup>' >> ModProj.csproj
         echo '</Project>' >> ModProj.csproj
         
-        # Registrar o repositório de pacotes oficiais do BepInEx
-        dotnet nuget add source https://nuget.bepinex.dev/v3/index.json -n BepInEx || true
-        
-        # Limpar arquivo padrão e copiar o seu Plugin.cs
+        # Substituir pelo Plugin.cs do usuario
         rm -f Class1.cs
         cp ../Plugin.cs Plugin.cs
 
