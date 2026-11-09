@@ -18,25 +18,25 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Criar projeto C#
+    - name: Criar projeto e injetar Plugin
       run: |
-        dotnet new classlib -o MeuModHostOnly -f net6.0 --force
-        cp Plugin.cs MeuModHostOnly/Class1.cs
+        dotnet new classlib -o ModProj -f net6.0 --force
+        cp Plugin.cs ModProj/Plugin.cs
+        rm ModProj/Class1.cs
 
-    - name: Adicionar repositório BepInEx e Pacotes
+    - name: Adicionar dependencias BepInEx e Harmony
       run: |
-        cd MeuModHostOnly
-        dotnet nuget add source https://nuget.bepinex.dev/v3/index.json -n BepInEx
-        dotnet add package BepInEx.Unity.IL2CPP --version 6.0.0-be.668
+        cd ModProj
         dotnet add package HarmonyX --version 2.10.2
+        dotnet add package BepInEx.Unity.IL2CPP --version 6.0.0-be.668 --source https://nuget.bepinex.dev/v3/index.json || true
 
-    - name: Compilar DLL
+    - name: Compilar Mod (.DLL)
       run: |
-        cd MeuModHostOnly
-        dotnet build -c Release
+        cd ModProj
+        dotnet build -c Release /p:AllowUnsafeBlocks=true
 
-    - name: Salvar DLL do Mod
+    - name: Salvar Artefato DLL
       uses: actions/upload-artifact@v4
       with:
         name: HostOnly-DLL
-        path: MeuModHostOnly/bin/Release/net6.0/*.dll
+        path: ModProj/bin/Release/net6.0/*.dll
