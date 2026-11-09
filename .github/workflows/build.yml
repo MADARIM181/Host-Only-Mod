@@ -1,8 +1,9 @@
+
 name: Compilar Mod Host Only
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   workflow_dispatch:
 
 jobs:
@@ -10,47 +11,67 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Baixar codigo fonte
-      uses: actions/checkout@v4
+      - name: Baixar codigo fonte
+        uses: actions/checkout@v4
 
-    - name: Configurar .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '6.0.x'
+      - name: Configurar .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
 
-    - name: Criar projeto e configurar dependencias NuGet
-      run: |
-        dotnet new classlib -o ModProj -f net6.0 --force
-        cd ModProj
-        
-        # Criar o arquivo .csproj puxando a versão mais recente do GameLibs automaticamente
-        echo '<Project Sdk="Microsoft.NET.Sdk">' > ModProj.csproj
-        echo '  <PropertyGroup>' >> ModProj.csproj
-        echo '    <TargetFramework>net6.0</TargetFramework>' >> ModProj.csproj
-        echo '    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>' >> ModProj.csproj
-        echo '    <LangVersion>latest</LangVersion>' >> ModProj.csproj
-        echo '  </PropertyGroup>' >> ModProj.csproj
-        echo '  <ItemGroup>' >> ModProj.csproj
-        echo '    <PackageReference Include="HarmonyX" Version="2.10.2" />' >> ModProj.csproj
-        echo '    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.668" />' >> ModProj.csproj
-        echo '    <PackageReference Include="Reactor.GameLibs" />' >> ModProj.csproj
-        echo '  </ItemGroup>' >> ModProj.csproj
-        echo '</Project>' >> ModProj.csproj
-        
-        # Adicionar a fonte de pacotes NuGet do BepInEx
-        dotnet nuget add source https://nuget.bepinex.dev/v3/index.json -n BepInEx || true
-        
-        # Substituir o arquivo padrão pelo seu Plugin.cs
-        rm -f Class1.cs
-        cp ../Plugin.cs Plugin.cs
+      - name: Configurar NuGet e dependencias
+        run: |
+          mkdir -p ModProj
 
-    - name: Compilar Mod (.DLL)
-      run: |
-        cd ModProj
-        dotnet build -c Release
+          cat > NuGet.Config <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org"
+                   value="https://api.nuget.org/v3/index.json" />
+              <add key="BepInEx"
+                   value="https://nuget.bepinex.dev/v3/index.json" />
+            </packageSources>
+          </configuration>
+          EOF
 
-    - name: Salvar Artefato DLL
-      uses: actions/upload-artifact@v4
-      with:
-        name: HostOnly-DLL
-        path: ModProj/bin/Release/net6.0/*.dll
+          cat > ModProj/ModProj.csproj <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net6.0</TargetFramework>
+              <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+              <LangVersion>latest</LangVersion>
+              <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+            </PropertyGroup>
+
+            <ItemGroup>
+              <PackageReference Include="HarmonyX"
+                                Version="2.10.2" />
+
+              <PackageReference Include="BepInEx.Unity.IL2CPP"
+                                Version="*-*" />
+
+              <PackageReference Include="Reactor.GameLibs"
+                                Version="*-*" />
+            </ItemGroup>
+
+            <ItemGroup>
+              <Compile Include="../**/*.cs"
+                       Exclude="../ModProj/**;../**/bin/**;../**/obj/**;../.git/**" />
+            </ItemGroup>
+          </Project>
+          EOF
+
+      - name: Restaurar dependencias
+        run: dotnet restore ModProj/ModProj.csproj
+
+      - name: Compilar Mod (.DLL)
+        run: dotnet build ModProj/ModProj.csproj -c Release --no-restore
+
+      - name: Salvar Artefato DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: HostOnly-DLL
+          path: ModProj/bin/Release/net6.0/*.dll
+          if-no-files-found: error
