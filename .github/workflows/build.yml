@@ -23,7 +23,7 @@ jobs:
         dotnet new classlib -o ModProj -f net6.0 --force
         cd ModProj
         
-        # Criar o arquivo .csproj com suporte a IL2CPP, blocos nao seguros e referencias oficiais
+        # Criar o arquivo .csproj puxando a versão mais recente do GameLibs automaticamente
         echo '<Project Sdk="Microsoft.NET.Sdk">' > ModProj.csproj
         echo '  <PropertyGroup>' >> ModProj.csproj
         echo '    <TargetFramework>net6.0</TargetFramework>' >> ModProj.csproj
@@ -33,7 +33,7 @@ jobs:
         echo '  <ItemGroup>' >> ModProj.csproj
         echo '    <PackageReference Include="HarmonyX" Version="2.10.2" />' >> ModProj.csproj
         echo '    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.668" />' >> ModProj.csproj
-        echo '    <PackageReference Include="Reactor.GameLibs" Version="2023.11.28.3" />' >> ModProj.csproj
+        echo '    <PackageReference Include="Reactor.GameLibs" />' >> ModProj.csproj
         echo '  </ItemGroup>' >> ModProj.csproj
         echo '</Project>' >> ModProj.csproj
         
