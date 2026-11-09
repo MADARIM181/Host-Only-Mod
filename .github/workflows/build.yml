@@ -18,22 +18,32 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Criar projeto e injetar Plugin
+    - name: Criar projeto e injetar dependencias
       run: |
         dotnet new classlib -o ModProj -f net6.0 --force
-        cp Plugin.cs ModProj/Plugin.cs
-        rm ModProj/Class1.cs
-
-    - name: Adicionar dependencias BepInEx e Harmony
-      run: |
         cd ModProj
-        dotnet add package HarmonyX --version 2.10.2
-        dotnet add package BepInEx.Unity.IL2CPP --version 6.0.0-be.668 --source https://nuget.bepinex.dev/v3/index.json || true
+        
+        # Adicionar propriedades essenciais para mods IL2CPP do Among Us no csproj
+        echo '<Project Sdk="Microsoft.NET.Sdk">' > ModProj.csproj
+        echo '  <PropertyGroup>' >> ModProj.csproj
+        echo '    <TargetFramework>net6.0</TargetFramework>' >> ModProj.csproj
+        echo '    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>' >> ModProj.csproj
+        echo '    <LangVersion>latest</LangVersion>' >> ModProj.csproj
+        echo '  </PropertyGroup>' >> ModProj.csproj
+        echo '  <ItemGroup>' >> ModProj.csproj
+        echo '    <PackageReference Include="HarmonyX" Version="2.10.2" />' >> ModProj.csproj
+        echo '    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.668" />' >> ModProj.csproj
+        echo '  </ItemGroup>' >> ModProj.csproj
+        echo '</Project>' >> ModProj.csproj
+        
+        # Substituir o arquivo padrão pelo Plugin.cs
+        rm Class1.cs
+        cp ../Plugin.cs Plugin.cs
 
     - name: Compilar Mod (.DLL)
       run: |
         cd ModProj
-        dotnet build -c Release /p:AllowUnsafeBlocks=true
+        dotnet build -c Release
 
     - name: Salvar Artefato DLL
       uses: actions/upload-artifact@v4
