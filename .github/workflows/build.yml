@@ -23,7 +23,7 @@ jobs:
         dotnet new classlib -o ModProj -f net6.0 --force
         cd ModProj
         
-        # Adicionar propriedades essenciais para mods IL2CPP do Among Us no csproj
+        # Criar o arquivo de projeto com suporte a blocos não seguros (necessário para o Among Us)
         echo '<Project Sdk="Microsoft.NET.Sdk">' > ModProj.csproj
         echo '  <PropertyGroup>' >> ModProj.csproj
         echo '    <TargetFramework>net6.0</TargetFramework>' >> ModProj.csproj
@@ -36,8 +36,11 @@ jobs:
         echo '  </ItemGroup>' >> ModProj.csproj
         echo '</Project>' >> ModProj.csproj
         
-        # Substituir o arquivo padrão pelo Plugin.cs
-        rm Class1.cs
+        # Registrar o repositório de pacotes oficiais do BepInEx
+        dotnet nuget add source https://nuget.bepinex.dev/v3/index.json -n BepInEx || true
+        
+        # Limpar arquivo padrão e copiar o seu Plugin.cs
+        rm -f Class1.cs
         cp ../Plugin.cs Plugin.cs
 
     - name: Compilar Mod (.DLL)
