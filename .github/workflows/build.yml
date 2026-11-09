@@ -19,11 +19,33 @@ jobs:
         with:
           dotnet-version: '6.0.x'
 
-      - name: Configurar NuGet e dependencias
+      - name: Criar projeto
+        shell: bash
         run: |
           mkdir -p ModProj
 
-          cat > NuGet.Config <<'EOF'
+          cat > ModProj/ModProj.csproj <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net6.0</TargetFramework>
+              <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+              <LangVersion>latest</LangVersion>
+            </PropertyGroup>
+
+            <ItemGroup>
+              <PackageReference Include="HarmonyX"
+                                Version="2.10.2" />
+
+              <PackageReference Include="BepInEx.Unity.IL2CPP"
+                                Version="6.0.0-be.*" />
+
+              <PackageReference Include="AmongUs.GameLibs"
+                                Version="*-*" />
+            </ItemGroup>
+          </Project>
+          EOF
+
+          cat > ModProj/NuGet.Config <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
             <packageSources>
@@ -36,38 +58,16 @@ jobs:
           </configuration>
           EOF
 
-          cat > ModProj/ModProj.csproj <<'EOF'
-          <Project Sdk="Microsoft.NET.Sdk">
-            <PropertyGroup>
-              <TargetFramework>net6.0</TargetFramework>
-              <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-              <LangVersion>latest</LangVersion>
-              <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-            </PropertyGroup>
-
-            <ItemGroup>
-              <PackageReference Include="HarmonyX"
-                                Version="2.10.2" />
-
-              <PackageReference Include="BepInEx.Unity.IL2CPP"
-                                Version="*-*" />
-
-              <PackageReference Include="Reactor.GameLibs"
-                                Version="*-*" />
-            </ItemGroup>
-
-            <ItemGroup>
-              <Compile Include="../**/*.cs"
-                       Exclude="../ModProj/**;../**/bin/**;../**/obj/**;../.git/**" />
-            </ItemGroup>
-          </Project>
-          EOF
+          cp Plugin.cs ModProj/Plugin.cs
 
       - name: Restaurar dependencias
-        run: dotnet restore ModProj/ModProj.csproj
+        run: |
+          dotnet restore ModProj/ModProj.csproj --verbosity normal
 
-      - name: Compilar Mod (.DLL)
-        run: dotnet build ModProj/ModProj.csproj -c Release --no-restore
+      - name: Compilar Mod DLL
+        run: |
+          dotnet build ModProj/ModProj.csproj \
+            -c Release --no-restore
 
       - name: Salvar Artefato DLL
         uses: actions/upload-artifact@v4
