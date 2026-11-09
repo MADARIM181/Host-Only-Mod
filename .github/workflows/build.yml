@@ -18,15 +18,21 @@ jobs:
       with:
         dotnet-version: '6.0.x'
 
-    - name: Criar projeto C# e copiar Plugin
+    - name: Criar projeto C#
       run: |
-        dotnet new classlib -o MeuModHostOnly -f net6.0
+        dotnet new classlib -o MeuModHostOnly -f net6.0 --force
         cp Plugin.cs MeuModHostOnly/Class1.cs
 
-    - name: Adicionar dependencias e compilar
+    - name: Adicionar repositório BepInEx e Pacotes
       run: |
         cd MeuModHostOnly
+        dotnet nuget add source https://nuget.bepinex.dev/v3/index.json -n BepInEx
+        dotnet add package BepInEx.Unity.IL2CPP --version 6.0.0-be.668
         dotnet add package HarmonyX --version 2.10.2
+
+    - name: Compilar DLL
+      run: |
+        cd MeuModHostOnly
         dotnet build -c Release
 
     - name: Salvar DLL do Mod
